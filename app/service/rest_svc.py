@@ -15,6 +15,7 @@ from app.objects.c_schedule import Schedule
 from app.objects.secondclass.c_fact import Fact
 from app.service.interfaces.i_rest_svc import RestServiceInterface
 from app.utility.base_service import BaseService
+from app.utility.base_world import BaseWorld
 
 
 class RestService(RestServiceInterface, BaseService):
@@ -38,8 +39,9 @@ class RestService(RestServiceInterface, BaseService):
             f.write(yaml.dump(dict(id=i, name=data.pop('name'), description=data.pop('description'),
                                    atomic_ordering=p)))
             f.truncate()
-        await self._services.get('data_svc').reload_data()
-        return [a.display for a in await self._services.get('data_svc').locate('adversaries', dict(adversary_id=i))]
+        if not data.get('prevent_reload'):
+            await self._services.get('data_svc').reload_data()
+            return [a.display for a in await self._services.get('data_svc').locate('adversaries', dict(adversary_id=i))]
 
     async def update_planner(self, data):
         planner = (await self.get_service('data_svc').locate('planners', dict(name=data['name'])))[0]
@@ -52,6 +54,13 @@ class RestService(RestServiceInterface, BaseService):
                                        for f in data['stopping_conditions']]
         await self.get_service('data_svc').store(planner)
 
+    def diff_yml(self, file_path, new_data):
+        print(new_data)
+        print("~~~~~~~~~~~~~~~~~~")
+        curr_data = BaseWorld.strip_yml(file_path)
+        print(curr_data)
+        return True
+
     async def persist_ability(self, data):
         _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % data.get('id'), location='data')
         if not file_path:
@@ -59,9 +68,11 @@ class RestService(RestServiceInterface, BaseService):
             if not os.path.exists(d):
                 os.makedirs(d)
             file_path = '%s/%s.yml' % (d, data.get('id'))
-        with open(file_path, 'w+') as f:
-            f.seek(0)
-            f.write(yaml.dump([data]))
+        with open(file_path, 'r+') as f:
+            diffed_data = self.diff_yml(file_path, yaml.dump(data))
+#        with open(file_path, 'w+') as f:
+#            f.seek(0)
+#            f.write(yaml.dump([data]))
         await self.get_service('data_svc').remove('abilities', dict(ability_id=data.get('id')))
         await self.get_service('data_svc').reload_data()
         return [a.display for a in await self.get_service('data_svc').locate('abilities', dict(ability_id=data.get('id')))]
@@ -75,6 +86,16 @@ class RestService(RestServiceInterface, BaseService):
             f.write(yaml.dump(data))
         await self._services.get('data_svc').reload_data()
         return [s.display for s in await self._services.get('data_svc').locate('sources', dict(id=data.get('id')))]
+
+    async def persist_objective(self, data):
+        _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % data.get('id'), location='data')
+        if not file_path:
+            file_path = 'data/objectives/%s.yml' % data.get('id')
+        with open(file_path, 'w+') as f:
+            f.seek(0)
+            f.write(yaml.dump(data))
+        await self._services.get('data_svc').reload_data()
+        return [o.display for o in await self._services.get('data_svc').locate('objectives', dict(id=data.get('id')))]
 
     async def delete_agent(self, data):
         await self.get_service('data_svc').remove('agents', data)
