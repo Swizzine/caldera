@@ -31,6 +31,13 @@ class RestService(RestServiceInterface, BaseService):
         _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % i, location='data')
         if not file_path:
             file_path = 'data/adversaries/%s.yml' % i
+        with open(file_path, 'r+') as f:
+            p = list()
+            for ability in data.pop('atomic_ordering'):
+                p.append(ability['id'])
+            data = dict(id=i, name=data.pop('name'), description=data.pop('description'),
+                                   atomic_ordering=p)
+            diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             p = list()
@@ -54,12 +61,28 @@ class RestService(RestServiceInterface, BaseService):
                                        for f in data['stopping_conditions']]
         await self.get_service('data_svc').store(planner)
 
-    def diff_yml(self, file_path, new_data):
+    def diff_yml(self, file_path, data):
+        diff_data = {}
+        new_data = yaml.full_load(data)
         print(new_data)
-        print("~~~~~~~~~~~~~~~~~~")
-        curr_data = BaseWorld.strip_yml(file_path)
+        print("NEW-DATA ~~~~~~~~~~~~~~~~~~ CURR-DATA")
+        if file_path:
+            curr_data = BaseWorld.strip_yml(file_path)[0]
+            while(type(curr_data)==list):
+                curr_data=curr_data[0]
         print(curr_data)
-        return True
+        print("CURR-DATA ~~~~~~~~~~~~~~~~~~ DIFF-DATA")
+        for curr_k in curr_data:
+            if curr_k in new_data.keys():
+                new_k = curr_k
+                if curr_data[curr_k] == new_data[new_k]:
+                    pass
+                else:
+                    diff_data[new_k] = new_data[new_k]
+            else:
+                pass
+        print(diff_data)
+        return diff_data
 
     async def persist_ability(self, data):
         _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % data.get('id'), location='data')
@@ -70,9 +93,9 @@ class RestService(RestServiceInterface, BaseService):
             file_path = '%s/%s.yml' % (d, data.get('id'))
         with open(file_path, 'r+') as f:
             diffed_data = self.diff_yml(file_path, yaml.dump(data))
-#        with open(file_path, 'w+') as f:
-#            f.seek(0)
-#            f.write(yaml.dump([data]))
+        with open(file_path, 'w+') as f:
+            f.seek(0)
+            f.write(yaml.dump([data]))
         await self.get_service('data_svc').remove('abilities', dict(ability_id=data.get('id')))
         await self.get_service('data_svc').reload_data()
         return [a.display for a in await self.get_service('data_svc').locate('abilities', dict(ability_id=data.get('id')))]
@@ -81,6 +104,8 @@ class RestService(RestServiceInterface, BaseService):
         _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % data.get('id'), location='data')
         if not file_path:
             file_path = 'data/sources/%s.yml' % data.get('id')
+        with open(file_path, 'r+') as f:
+            diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             f.write(yaml.dump(data))
@@ -91,6 +116,8 @@ class RestService(RestServiceInterface, BaseService):
         _, file_path = await self.get_service('file_svc').find_file_path('%s.yml' % data.get('id'), location='data')
         if not file_path:
             file_path = 'data/objectives/%s.yml' % data.get('id')
+        with open(file_path, 'r+') as f:
+            diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             f.write(yaml.dump(data))
