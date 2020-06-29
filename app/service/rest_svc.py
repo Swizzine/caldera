@@ -46,7 +46,7 @@ class RestService(RestServiceInterface, BaseService):
                 os.makedirs(file_path)
             file_path = '%s/%s.yml' % (file_path, data.get('id'))
         with open(file_path, 'r+') as f:
-            diffed_data = self.diff_yml(file_path, yaml.dump(data))
+            diffed_data = self._diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             p = list()
             for ability in data.pop('atomic_ordering'):
@@ -65,7 +65,7 @@ class RestService(RestServiceInterface, BaseService):
                 os.makedirs(d)
             file_path = '%s/%s.yml' % (d, data.get('id'))
         with open(file_path, 'r+') as f:
-            diffed_data = self.diff_yml(file_path, yaml.dump(data))
+            diffed_data = self._diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             f.write(yaml.dump(data.update(diffed_data)))
@@ -78,7 +78,7 @@ class RestService(RestServiceInterface, BaseService):
         if not file_path:
             file_path = 'data/sources/%s.yml' % data.get('id')
         with open(file_path, 'r+') as f:
-            diffed_data = self.diff_yml(file_path, yaml.dump(data))
+            diffed_data = self._diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             f.write(yaml.dump(data.update(diffed_data)))
@@ -90,7 +90,7 @@ class RestService(RestServiceInterface, BaseService):
         if not file_path:
             file_path = 'data/objectives/%s.yml' % data.get('id')
         with open(file_path, 'r+') as f:
-            diffed_data = self.diff_yml(file_path, yaml.dump(data))
+            diffed_data = self._diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
             f.seek(0)
             f.write(yaml.dump(data.update(diffed_data)))
@@ -345,14 +345,14 @@ class RestService(RestServiceInterface, BaseService):
             os.remove(file_path)
         return 'Delete action completed'
 
-    def _bulk_update_objects(self, obj_class):
-        if obj_class = 'ability':
+    def _bulk_update_objects(self, obj_class, diffed_data):
+        if obj_class == 'ability':
             search_dir = 'data/abilities/'
-        elif obj_class = 'adversary':
+        elif obj_class == 'adversary':
             search_dir = 'data/adversaries/'
-        elif obj_class = 'objective':
+        elif obj_class == 'objective':
             search_dir = 'data/objectives/'
-        elif obj_class = 'source':
+        elif obj_class == 'source':
             search_dir = 'data/sources/'
         else:
             return 'Bulk update failed'
