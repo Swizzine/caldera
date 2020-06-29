@@ -35,7 +35,6 @@ class RestService(RestServiceInterface, BaseService):
                                        for f in data['stopping_conditions']]
         await self.get_service('data_svc').store(planner)
 
-
     async def persist_adversary(self, data):
         i = data.pop('i')
         if not i:
@@ -53,8 +52,7 @@ class RestService(RestServiceInterface, BaseService):
             for ability in data.pop('atomic_ordering'):
                 p.append(ability['id'])
             f.write(yaml.dump(dict(id=i, name=data.pop('name'), description=data.pop('description'),
-                                   atomic_ordering=p)))
-            f.write(yaml.dump(diffed_data))
+                                   atomic_ordering=p).update(diffed_data)))
         if not data.get('prevent_reload'):
             await self._services.get('data_svc').reload_data()
             return [a.display for a in await self._services.get('data_svc').locate('adversaries', dict(adversary_id=i))]
@@ -69,8 +67,8 @@ class RestService(RestServiceInterface, BaseService):
         with open(file_path, 'r+') as f:
             diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
-#            f.seek(0)
-            f.write(yaml.dump([diffed_data]))
+            f.seek(0)
+            f.write(yaml.dump(data.update(diffed_data)))
         await self.get_service('data_svc').remove('abilities', dict(ability_id=data.get('id')))
         await self.get_service('data_svc').reload_data()
         return [a.display for a in await self.get_service('data_svc').locate('abilities', dict(ability_id=data.get('id')))]
@@ -82,8 +80,8 @@ class RestService(RestServiceInterface, BaseService):
         with open(file_path, 'r+') as f:
             diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
-#            f.seek(0)
-            f.write(yaml.dump(diffed_data))
+            f.seek(0)
+            f.write(yaml.dump(data.update(diffed_data)))
         await self._services.get('data_svc').reload_data()
         return [s.display for s in await self._services.get('data_svc').locate('sources', dict(id=data.get('id')))]
 
@@ -94,8 +92,8 @@ class RestService(RestServiceInterface, BaseService):
         with open(file_path, 'r+') as f:
             diffed_data = self.diff_yml(file_path, yaml.dump(data))
         with open(file_path, 'w+') as f:
-#            f.seek(0)
-            f.write(yaml.dump(diffed_data))
+            f.seek(0)
+            f.write(yaml.dump(data.update(diffed_data)))
         await self._services.get('data_svc').reload_data()
         return [o.display for o in await self._services.get('data_svc').locate('objectives', dict(id=data.get('id')))]
 
@@ -346,6 +344,24 @@ class RestService(RestServiceInterface, BaseService):
         if os.path.exists(file_path):
             os.remove(file_path)
         return 'Delete action completed'
+
+    def _bulk_update_objects(self, obj_class):
+        if obj_class = 'ability':
+            search_dir = 'data/abilities/'
+        elif obj_class = 'adversary':
+            search_dir = 'data/adversaries/'
+        elif obj_class = 'objective':
+            search_dir = 'data/objectives/'
+        elif obj_class = 'source':
+            search_dir = 'data/sources/'
+        else:
+            return 'Bulk update failed'
+        files = os.listdir()
+        for fp in files:
+            if '.yml' in fp:
+                with open(fp, 'w+') as f:
+                    f.write(yaml.dump(diffed_data))
+        return 'Bulk update completed'
 
     def _diff_yml(self, file_path, data):
         diff_data = {}
