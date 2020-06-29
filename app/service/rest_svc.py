@@ -35,23 +35,6 @@ class RestService(RestServiceInterface, BaseService):
                                        for f in data['stopping_conditions']]
         await self.get_service('data_svc').store(planner)
 
-    def diff_yml(self, file_path, data):
-        diff_data = {}
-        new_data = yaml.full_load(data)
-        if file_path:
-            curr_data = BaseWorld.strip_yml(file_path)[0]
-            while(type(curr_data)==list):
-                curr_data=curr_data[0]
-        for curr_k in curr_data:
-            if curr_k in new_data.keys():
-                new_k = curr_k
-                if curr_data[curr_k] == new_data[new_k]:
-                    pass
-                else:
-                    diff_data[new_k] = new_data[new_k]
-            else:
-                pass
-        return diff_data
 
     async def persist_adversary(self, data):
         i = data.pop('i')
@@ -363,3 +346,21 @@ class RestService(RestServiceInterface, BaseService):
         if os.path.exists(file_path):
             os.remove(file_path)
         return 'Delete action completed'
+
+    def _diff_yml(self, file_path, data):
+        diff_data = {}
+        new_data = yaml.full_load(data)
+        if file_path:
+            curr_data = BaseWorld.strip_yml(file_path)[0]
+            while(type(curr_data)==list):
+                curr_data=curr_data[0]
+        for curr_k in curr_data:
+            if curr_k in new_data.keys():
+                new_k = curr_k
+                if curr_data[curr_k] == new_data[new_k]:
+                    pass
+                else:
+                    diff_data[new_k] = new_data[new_k]
+            else:
+                pass
+        return diff_data
